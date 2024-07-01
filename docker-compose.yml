@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:14.5
+    environment:
+      POSTGRES_DB: "top_hero"
+      POSTGRES_USER: "top_hero_service"
+      POSTGRES_PASSWORD: "vc894hv9w"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    ports:
+      - "5432:5432"
