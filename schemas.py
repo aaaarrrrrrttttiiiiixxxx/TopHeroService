@@ -6,7 +6,7 @@ from pydantic.v1 import validator
 
 class Hero(BaseModel):
     name: str
-    photo_url: str
+    photo_url: Optional[str]
 
 
 class MakeVote(BaseModel):
@@ -29,5 +29,8 @@ class PatchListItem(BaseModel):
 
 
 class UserVote(BaseModel):
-    voting_name: str
+    voting: str
     top_heroes: List[Hero]
+
+    class Config:
+        orm_mode = True

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from database import engine, get_session
-from models import Patch, Vote
+from models import PatchModel, VoteModel
 from schemas import PatchListItem, MakeVote, UserVote
 from services import Service
 
@@ -39,7 +39,7 @@ if DEBUG:
         return encoded_jwt
 
 
-    @app.post("/token")
+    @app.post("/token/", response_model=Token)
     async def token_for_debug(user_id: int) -> Token:
         access_token = create_access_token(
             data={"user_id": user_id},
@@ -81,8 +81,11 @@ async def make_vote(data: MakeVote,
 
 
 @app.get("/user_votes/", response_model=List[UserVote])
-async def user_votes(patch_name: str, user_id: Annotated[int, Depends(get_current_user_id_auto_error)]):
-    pass
+async def user_votes(patch_name: str,
+                     user_id: Annotated[int, Depends(get_current_user_id_auto_error)],
+                     session: AsyncSession = Depends(get_session)):
+    services = Service()
+    return await services.user_votes(patch_name=patch_name, user_id=user_id, session=session)
 
 
 @app.post("/tops_by_patch/", response_model=List[UserVote])
