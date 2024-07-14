@@ -54,7 +54,7 @@ class BestHeroesModel(Base):
 
     __table_args__ = (
         # UniqueConstraint(('patch', 'voting'))
-        Index('patch_voting_index', 'patch', 'voting', unique=True),
+        Index('patch_voting_index', 'patch', 'voting'),
     )
 
 

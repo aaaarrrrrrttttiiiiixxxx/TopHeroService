@@ -7,12 +7,9 @@ from fastapi import FastAPI, Security, HTTPException, Depends
 from fastapi.security import APIKeyCookie
 from jwt import InvalidTokenError
 from pydantic import BaseModel, ValidationError
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from database import engine, get_session
-from models import PatchModel, VoteModel
+from database import generate_async_session
 from schemas import PatchListItem, MakeVote, UserVote
 from services import Service
 
@@ -74,7 +71,7 @@ async def get_patch_list(user_id: Annotated[int, Depends(get_current_user_id)]):
 @app.post("/make_vote/")
 async def make_vote(data: MakeVote,
                     user_id: Annotated[int, Depends(get_current_user_id_auto_error)],
-                    session: AsyncSession = Depends(get_session)):
+                    session: AsyncSession = Depends(generate_async_session)):
     services = Service()
     await services.make_vote(data=data, user_id=user_id, session=session)
     return {}
@@ -83,7 +80,7 @@ async def make_vote(data: MakeVote,
 @app.get("/user_votes/", response_model=List[UserVote])
 async def user_votes(patch_name: str,
                      user_id: Annotated[int, Depends(get_current_user_id_auto_error)],
-                     session: AsyncSession = Depends(get_session)):
+                     session: AsyncSession = Depends(generate_async_session)):
     services = Service()
     return await services.user_votes(patch_name=patch_name, user_id=user_id, session=session)
 
