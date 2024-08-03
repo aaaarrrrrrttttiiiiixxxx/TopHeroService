@@ -8,10 +8,12 @@ services:
       POSTGRES_PASSWORD: "vc894hv9w"
       PGDATA: "/var/lib/postgresql/data/pgdata"
     ports:
-      - "5432:5432"
+      - 5432:5432
 
   redis:
     image: redis:7
+    ports:
+      - 6379:6379
 
   server:
     build: .
@@ -25,28 +27,43 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
+      - postgres
 
   worker:
     build: .
-    command: celery -A celery_worker.celery beat --loglevel=debug --logfile=logs/celery.log
+    command: celery -A celery_worker worker --loglevel=debug --logfile=logs/celery.log
+
     volumes:
       - .:/usr/src/app
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
-      - server
+      - postgres
       - redis
-
-  dashboard:
+  beat:
     build: .
-    command: celery --broker=redis://redis:6379/0 flower --port=5555
-    ports:
-      - 5556:5555
+    command: celery -A celery_worker beat --loglevel=debug --logfile=logs/celery.log
+
+    volumes:
+      - .:/usr/src/app
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
-      - server
+      - postgres
+      - redis
+
+  dashboard:
+    build: .
+    command: celery -A celery_worker  flower --port=5555
+    ports:
+      - 5555:5555
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - postgres
       - redis
       - worker
+      - beat

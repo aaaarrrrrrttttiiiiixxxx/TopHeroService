@@ -43,3 +43,9 @@ class Service:
                         'top_heroes': filter(lambda h: h is not None,
                                              [vote.top_hero_model, vote.top_hero_2_model, vote.top_hero_3_model])})
         return res
+
+    async def get_patch_list(self, session: AsyncSession, user_id):
+        pass
+
+    async def tops_by_patch(self, session: AsyncSession, patch):
+        pass

@@ -1,38 +1,51 @@
 import asyncio
 import collections
 import os
+from datetime import timedelta
 
 from celery import Celery
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import generate_async_session, get_async_session
+from database import generate_async_session, get_async_session, get_session
 from models import VoteModel, BestHeroesModel, PatchModel, VotingModel, HeroModel
 
-celery = Celery(__name__)
-celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
-celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
+app = Celery(__name__)
+app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
+app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
+app = Celery('example', broker='redis://localhost:6379/0')
 
-celery.autodiscover_tasks()
+app.conf.update(
+    task_serializer='json',
+    accept_content=['json'],
+    timezone='UTC',
+    enable_utc=True,
+    worker_hijack_root_logger=False,
+)
 
-celery.conf.beat_schedule = {
+app.autodiscover_tasks()
+
+app.conf.beat_schedule = {
     'parse_best_heroes_last_patch': {
-        'task': 'parse_best_heroes_last_patch',
-        'schedule': 10.0
+        'task': f'celery_worker.parse_best_heroes_last_patch',
+        'schedule': timedelta(seconds=10)
     },
     'parse_best_heroes_prev_patch': {
-        'task': f'parse_best_heroes_prev_patch',
-        'schedule': 30.0
+        'task': f'celery_worker.parse_best_heroes_prev_patch',
+        'schedule': timedelta(seconds=30)
     }
 }
 
 
-@celery.task
+@app.task
 def parse_best_heroes_last_patch():
-    asyncio.run(update_best_heroes_last_patch())
+    session = next(get_session())
+    session.add(BestHeroesModel(top=1, hero=1, patch='7.36b', voting='KERRY'))
+    session.commit()
+    # asyncio.run(update_best_heroes_last_patch())
 
 
-@celery.task
+@app.task
 def parse_best_heroes_prev_patch():
     asyncio.run(update_best_heroes_prev_patch())
 
@@ -89,3 +102,5 @@ async def add_zero_votes_heroes(session: AsyncSession, existing_heroes: list[int
     for top, hero_id in enumerate(ids, start=len(existing_heroes)):
         new_best_heroes.append(BestHeroesModel(top=top, hero=hero_id, patch=patch, voting=voting))
     session.add_all(new_best_heroes)
+
+# parse_best_heroes_last_patch()

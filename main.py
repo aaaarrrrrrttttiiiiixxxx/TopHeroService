@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
+from datetime import timedelta
 from typing import Annotated, Optional
 from typing import List
 
@@ -9,7 +10,8 @@ from jwt import InvalidTokenError
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import generate_async_session
+from database import generate_async_session, get_session
+from models import BestHeroesModel
 from schemas import PatchListItem, MakeVote, UserVote
 from services import Service
 
@@ -64,16 +66,18 @@ async def get_current_user_id_auto_error(user_id: Optional[int] = Depends(get_cu
 
 
 @app.get("/patch_list/", response_model=List[PatchListItem])
-async def get_patch_list(user_id: Annotated[int, Depends(get_current_user_id)]):
-    pass
+async def get_patch_list(user_id: Annotated[int, Depends(get_current_user_id)],
+                         session: AsyncSession = Depends(generate_async_session)):
+    service = Service()
+    return await service.get_patch_list(session, user_id)
 
 
 @app.post("/make_vote/")
 async def make_vote(data: MakeVote,
                     user_id: Annotated[int, Depends(get_current_user_id_auto_error)],
                     session: AsyncSession = Depends(generate_async_session)):
-    services = Service()
-    await services.make_vote(data=data, user_id=user_id, session=session)
+    service = Service()
+    await service.make_vote(data=data, user_id=user_id, session=session)
     return {}
 
 
@@ -81,10 +85,19 @@ async def make_vote(data: MakeVote,
 async def user_votes(patch_name: str,
                      user_id: Annotated[int, Depends(get_current_user_id_auto_error)],
                      session: AsyncSession = Depends(generate_async_session)):
-    services = Service()
-    return await services.user_votes(patch_name=patch_name, user_id=user_id, session=session)
+    service = Service()
+    return await service.user_votes(patch_name=patch_name, user_id=user_id, session=session)
 
 
-@app.post("/tops_by_patch/", response_model=List[UserVote])
-async def tops_by_patch(patch_name: str):
-    pass
+@app.get("/tops_by_patch/", response_model=List[UserVote])
+async def tops_by_patch(patch_name: str, session: AsyncSession = Depends(generate_async_session)):
+    service = Service()
+    return await service.get_patch_list(session, patch_name)
+
+
+@app.get("/test/")
+async def test():
+    session = next(get_session())
+    session.add(BestHeroesModel(top=1, hero=1, patch='7.36b', voting='KERRY'))
+    session.commit()
+    return {}
