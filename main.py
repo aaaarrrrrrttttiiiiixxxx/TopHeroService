@@ -10,8 +10,7 @@ from jwt import InvalidTokenError
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import generate_async_session, get_session
-from models import BestHeroesModel
+from database import generate_async_session
 from schemas import PatchListItem, MakeVote, UserVote
 from services import Service
 
@@ -93,11 +92,3 @@ async def user_votes(patch_name: str,
 async def tops_by_patch(patch_name: str, session: AsyncSession = Depends(generate_async_session)):
     service = Service()
     return await service.get_patch_list(session, patch_name)
-
-
-@app.get("/test/")
-async def test():
-    session = next(get_session())
-    session.add(BestHeroesModel(top=1, hero=1, patch='7.36b', voting='KERRY'))
-    session.commit()
-    return {}

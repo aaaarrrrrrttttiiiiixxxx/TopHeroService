@@ -2,8 +2,9 @@ version: "3.9"
 services:
   postgres:
     image: postgres:14.5
+    container_name: postgres-db
     environment:
-      POSTGRES_DB: "top_hero"
+      POSTGRES_DB: "top_hero_service"
       POSTGRES_USER: "top_hero_service"
       POSTGRES_PASSWORD: "vc894hv9w"
       PGDATA: "/var/lib/postgresql/data/pgdata"
