@@ -91,4 +91,5 @@ async def user_votes(patch_name: str,
 @app.get("/tops_by_patch/", response_model=List[UserVote])
 async def tops_by_patch(patch_name: str, session: AsyncSession = Depends(generate_async_session)):
     service = Service()
-    return await service.get_patch_list(session, patch_name)
+    res = await service.tops_by_patch(session, patch_name)
+    return res

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import VoteModel, HeroModel, VoteWithHeroesModel
+from models import VoteModel, HeroModel, VoteWithHeroesModel, BestHeroesJoinedModel
 from schemas import MakeVote, UserVote
 
 
@@ -48,4 +48,14 @@ class Service:
         pass
 
     async def tops_by_patch(self, session: AsyncSession, patch):
-        pass
+        top_heroes = await session.execute(select(BestHeroesJoinedModel).filter(BestHeroesJoinedModel.patch == patch))
+        votings = collections.defaultdict(list)
+        for hero in top_heroes.scalars().all():
+            votings[hero.voting].append(hero)
+        res = []
+        for voting, heroes_list in votings.items():
+            res.append({
+                'voting': voting,
+                'top_heroes': map(lambda x: x.top_hero_model, sorted(heroes_list, key=lambda x: x.top))
+            })
+        return res
